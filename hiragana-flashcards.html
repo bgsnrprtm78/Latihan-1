@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Hiragana Flashcards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFE7D6;
+    --paper-2:#E5DBC4;
+    --ink:#26221C;
+    --ink-soft:#5B5348;
+    --seal:#A6332B;
+    --seal-dark:#7C2420;
+    --bamboo:#5E7257;
+    --card:#FBF8F1;
+    --card-back:#3A342B;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  .app{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(0,0,0,0.02) 0, transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(0,0,0,0.02) 0, transparent 40%);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    color:var(--ink);
+    padding:28px 24px 40px;
+    border-radius:14px;
+  }
+  .header{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px;}
+  .title-block h1{
+    font-family:'Shippori Mincho', serif;
+    font-weight:700;
+    font-size:34px;
+    margin:0;
+    color:var(--ink);
+    letter-spacing:1px;
+  }
+  .title-block p{margin:2px 0 0; font-size:13px; color:var(--ink-soft);}
+  .progress-wrap{display:flex; align-items:center; gap:10px;}
+  .seal-count{
+    width:52px; height:52px; border-radius:50%;
+    border:2px solid var(--seal);
+    color:var(--seal-dark);
+    font-family:'Shippori Mincho', serif; font-weight:700; font-size:15px;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    line-height:1.1;
+    transform:rotate(-6deg);
+    background:rgba(166,51,43,0.06);
+  }
+  .progress-label{font-size:12px; color:var(--ink-soft);}
+  .tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:20px;}
+  .tab{
+    flex:0 0 auto;
+    padding:7px 14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    background:var(--paper-2);
+    border:1px solid rgba(38,34,28,0.15);
+    border-radius:0 0 8px 8px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    user-select:none;
+  }
+  .tab.active{
+    background:var(--card);
+    color:var(--seal-dark);
+    border-color:var(--seal);
+    font-weight:500;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));
+    gap:14px;
+  }
+  .card-slot{ perspective:900px; height:150px; }
+  .card{
+    position:relative; width:100%; height:100%;
+    transform-style:preserve-3d;
+    transition:transform 0.45s cubic-bezier(.2,.7,.3,1);
+    cursor:pointer;
+  }
+  .card.flipped{ transform:rotateY(180deg); }
+  .face{
+    position:absolute; inset:0;
+    border-radius:10px;
+    backface-visibility:hidden;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:10px;
+    text-align:center;
+  }
+  .face-front{
+    background:var(--card);
+    border:1px solid rgba(38,34,28,0.15);
+  }
+  .glyph{ font-family:'Shippori Mincho', serif; font-size:46px; line-height:1; color:var(--ink); }
+  .romaji-hint{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--ink-soft); margin-top:8px; letter-spacing:1px; }
+  .face-back{
+    background:var(--card-back);
+    color:#F0EAD9;
+    transform:rotateY(180deg);
+  }
+  .romaji-big{ font-family:'JetBrains Mono', monospace; font-size:20px; font-weight:500; color:#F0EAD9; }
+  .mnemonic{ font-size:11.5px; line-height:1.4; color:#D8CFBB; margin-top:6px; }
+  .stamp-btn{
+    position:absolute; top:6px; right:6px;
+    width:26px; height:26px; border-radius:50%;
+    border:1.5px solid var(--seal);
+    background:transparent;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    z-index:2;
+  }
+  .stamp-btn.on{ background:var(--seal); }
+  .stamp-btn i{ font-size:14px; color:var(--seal); }
+  .stamp-btn.on i{ color:#F5E9D8; }
+  .sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
+</style>
+</head>
+<body>
+<div class="app">
+  <h2 class="sr-only">Kartu hafalan interaktif untuk 46 huruf hiragana dasar, dikelompokkan per baris, dengan mnemonik bahasa Indonesia dan penanda hafal.</h2>
+
+  <div class="header">
+    <div class="title-block">
+      <h1>ひらがな</h1>
+      <p>Ketuk kartu untuk membalik &middot; ketuk segel merah kalau sudah hafal</p>
+    </div>
+    <div class="progress-wrap">
+      <div class="seal-count" id="sealCount">0/46</div>
+      <div class="progress-label">sudah dihafal</div>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css"></script>
+<script>
+const rows = [
+  { label:'a-i-u-e-o', items:[
+    ['あ','a','seperti antena berdiri tegak'],
+    ['い','i','dua batang lidi berdiri sejajar'],
+    ['う','u','seperti topi kecil menunduk'],
+    ['え','e','burung kecil melengkung terbang'],
+    ['お','o','obor dengan api berkobar di ujung'],
+  ]},
+  { label:'ka-ki-ku-ke-ko', items:[
+    ['か','ka','kaki sedang menendang ke samping'],
+    ['き','ki','kunci dengan gerigi berlekuk'],
+    ['く','ku','sudut siku tajam menekuk'],
+    ['け','ke','gerbong kereta dengan sambungan'],
+    ['こ','ko','dua bukit kembar berdampingan'],
+  ]},
+  { label:'sa-shi-su-se-so', items:[
+    ['さ','sa','sabit melengkung memotong padi'],
+    ['し','shi','kail pancing melengkung ke atas'],
+    ['す','su','selang melingkar seperti spiral'],
+    ['せ','se','tangga terpotong bersudut'],
+    ['そ','so','sungai berkelok dua kali'],
+  ]},
+  { label:'ta-chi-tsu-te-to', items:[
+    ['た','ta','tangga menaik dengan tiang samping'],
+    ['ち','chi','ekor cicak melengkung ke bawah'],
+    ['つ','tsu','senyum tersungging ke atas'],
+    ['て','te','tangan menepuk garis lurus'],
+    ['と','to','tongkat dengan kait di ujung'],
+  ]},
+  { label:'na-ni-nu-ne-no', items:[
+    ['な','na','naga melilit tiang panjang'],
+    ['に','ni','dua garis dan kait pendek'],
+    ['ぬ','nu','tali tertusuk lalu berputar'],
+    ['ね','ne','net memancing berekor melengkung'],
+    ['の','no','satu putaran spiral penuh'],
+  ]},
+  { label:'ha-hi-fu-he-ho', items:[
+    ['は','ha','halaman buku terbuka lebar'],
+    ['ひ','hi','senyum tipis melengkung ke atas'],
+    ['ふ','fu','sayap terbang mengepak dua sisi'],
+    ['へ','he','gunung kecil landai menurun'],
+    ['ほ','ho','buku dengan tiang bendera'],
+  ]},
+  { label:'ma-mi-mu-me-mo', items:[
+    ['ま','ma','mata dengan ekor panjang melengkung'],
+    ['み','mi','mie melingkar dua putaran'],
+    ['む','mu','awan tebal bergulung ke bawah'],
+    ['め','me','sepasang mata mengintip'],
+    ['も','mo','tiang dengan bendera kecil'],
+  ]},
+  { label:'ya-yu-yo', items:[
+    ['や','ya','yoyo dengan tali menjuntai'],
+    ['ゆ','yu','ombak melengkung tenang'],
+    ['よ','yo','yoyo memantul turun ke bawah'],
+  ]},
+  { label:'ra-ri-ru-re-ro', items:[
+    ['ら','ra','rambut ikal melengkung'],
+    ['り','ri','dua ranting sejajar seperti pita'],
+    ['る','ru','roda kecil berputar'],
+    ['れ','re','rel kereta melengkung ke ekor'],
+    ['ろ','ro','tali melingkar membentuk simpul'],
+  ]},
+  { label:'wa-wo-n', items:[
+    ['わ','wa','wajan dengan pegangan menyamping'],
+    ['を','wo','wortel melengkung, partikel objek'],
+    ['ん','n','satu garis melengkung seperti kait hidung'],
+  ]},
+];
+
+const grid = document.getElementById('grid');
+const tabsEl = document.getElementById('tabs');
+const sealCountEl = document.getElementById('sealCount');
+let activeRow = -1; // -1 = all
+let learned = new Set();
+
+function allItems(){
+  return rows.flatMap((r,ri)=> r.items.map((it,ii)=>({...it, key:ri+'-'+ii})));
+}
+
+function render(){
+  tabsEl.innerHTML = '';
+  const allTab = document.createElement('div');
+  allTab.className = 'tab' + (activeRow===-1?' active':'');
+  allTab.textContent = 'semua';
+  allTab.onclick = ()=>{ activeRow=-1; render(); };
+  tabsEl.appendChild(allTab);
+  rows.forEach((r,ri)=>{
+    const t = document.createElement('div');
+    t.className = 'tab' + (activeRow===ri?' active':'');
+    t.textContent = r.label;
+    t.onclick = ()=>{ activeRow=ri; render(); };
+    tabsEl.appendChild(t);
+  });
+
+  grid.innerHTML = '';
+  const list = activeRow===-1 ? allItems() : rows[activeRow].items.map((it,ii)=>({glyph:it[0],romaji:it[1],mnemonic:it[2],key:activeRow+'-'+ii}));
+
+  list.forEach(({glyph, romaji, mnemonic, key})=>{
+    const slot = document.createElement('div');
+    slot.className = 'card-slot';
+
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const front = document.createElement('div');
+    front.className = 'face face-front';
+    front.innerHTML = `<div class="glyph">${glyph}</div><div class="romaji-hint">tebak bacaannya</div>`;
+
+    const back = document.createElement('div');
+    back.className = 'face face-back';
+    back.innerHTML = `<div class="romaji-big">${romaji}</div><div class="mnemonic">${mnemonic}</div>`;
+
+    card.appendChild(front);
+    card.appendChild(back);
+    card.onclick = ()=> card.classList.toggle('flipped');
+
+    const stamp = document.createElement('button');
+    stamp.className = 'stamp-btn' + (learned.has(key)?' on':'');
+    stamp.setAttribute('aria-label','tandai sudah hafal');
+    stamp.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i>';
+    stamp.onclick = (e)=>{
+      e.stopPropagation();
+      if(learned.has(key)) learned.delete(key); else learned.add(key);
+      updateCount();
+      stamp.classList.toggle('on');
+    };
+
+    slot.appendChild(card);
+    slot.appendChild(stamp);
+    grid.appendChild(slot);
+  });
+}
+
+function updateCount(){
+  sealCountEl.textContent = learned.size + '/46';
+}
+
+render();
+updateCount();
+</script>
+</body>
+</html>
